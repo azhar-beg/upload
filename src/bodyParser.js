@@ -1,12 +1,12 @@
-const splitFields = (buffer, boundary) => {
+const splitFields = (body, boundary) => {
   const fields = [];
-  let remaining = buffer;
-  for (let index = 0; index < buffer.length; index++) {
-    const slice = buffer.slice(index, index + boundary.length)
+  let remaining = body;
+  for (let index = 0; index < body.length; index++) {
+    const slice = body.slice(index, index + boundary.length)
     if (slice.equals(boundary)) {
       const part = remaining.slice(0, index);
       fields.push(part);
-      remaining = buffer.slice(index + boundary.length);
+      remaining = body.slice(index + boundary.length);
     }
   }
   return fields;
@@ -17,7 +17,6 @@ const parseAttributes = rawAttributes => {
     return;
   }
   const attributes = {};
-
   rawAttributes.forEach(attribute => {
     const [key, value] = attribute.split('=');
     attributes[key.trim()] = value.trim().slice(1, -1);
@@ -39,7 +38,7 @@ const parseHeader = (header) => {
   return parsedHeader;
 };
 
-const splitField = field => {
+const parseField = field => {
   for (let index = 0; index < field.length; index++) {
     const slice = field.slice(index, index + 4);
     const CRLF = Buffer.from('\r\n\r\n')
@@ -51,21 +50,16 @@ const splitField = field => {
   }
 };
 
-const parseBody = (fields) => {
+const parseBody = (body, boundary) => {
+  const fields = splitFields(body, boundary);
   const bodyParams = [];
   fields.forEach(field => {
     if (field.length === 0) {
       return;
     }
-    bodyParams.push(splitField(field))
+    bodyParams.push(parseField(field))
   })
   return bodyParams;
 };
 
-const parseBuffer = (buffer, boundary) => {
-  const fields = splitFields(buffer, boundary);
-  const parsedBody = parseBody(fields);
-  return parsedBody;
-};
-
-module.exports = { parseBuffer };
+module.exports = { parseBody };
